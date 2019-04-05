@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
-import time
+import random
 
 ########################################################################################################################
 # Constants
@@ -15,6 +15,8 @@ S60 = np.sin(1.0472)
 # Auxiliary Functions
 ########################################################################################################################
 #Hexagon Number
+
+
 def chn(n):
     return 1+(6*(0.5*n*(n-1)))
 
@@ -89,6 +91,12 @@ def randomPosition(xg, yg, kx, ky):
     return tempx, tempy
 
 
+def randomBandwidths(W, Bmax):
+    p = np.linspace(1E6, int(Bmax), int(((Bmax-1E6)/1E6)+1))
+    r = np.random.choice(p, int(W), replace=False)
+    return r
+
+
 def isInHexagon(x, y, cx, cy, R):
     dx = abs(x-cx)
     dy = abs(y-cy)
@@ -100,19 +108,52 @@ def isInHexagon(x, y, cx, cy, R):
         return True
 
 
+def calcDistance(kx, ky, cx, cy):
+    d = np.zeros((len(kx), len(kx[0]), len(cx)))
+    for i in range(0, len(kx)):
+        for j in range(0, len(kx[0])):
+            for r in range(0, len(cx)):
+                d[i, j, r] = np.sqrt((kx[i, j] - cx[r]) ** 2 + (ky[i, j] - cy[r]) ** 2)
+    return d
+
+
+def calcPathLoss(d, G, F, gamma):
+    alpha = np.zeros((len(d), len(d[0]), len(d[0][0])))
+    for i in range(0, len(d)):
+        for j in range(0, len(d[0])):
+            for r in range(0, len(d[0][0])):
+                if (4*np.pi*F*(d[i, j, r]**gamma)) == 0:
+                    print(d[i, j, r])
+                alpha[i, j, r] = ((np.sqrt(G)*3E8)/(4*np.pi*F*(d[i, j, r]**gamma)))**2
+    return alpha
+
+
 
 ########################################################################################################################
 # Parameters
 ########################################################################################################################
 
 #Cluster Size (1 to 4 works)
-C = 4
-#Base Stations (1 per ce'll)
+C = 5
+#Base Stations (1 per cell)
 BS = chn(C)
 #Cell Radius
 R = 100
 #Users per Cell
-K = 50
+K = 10
+#Min Transmission Frequency
+Fmin = 9E8
+#Max Transmission Frequency
+Fmax = 5E9
+#Antenna Total Gain (in dB)
+G = 10**(3/10)
+#Path Loss Exponent
+gamma = 2
+#Number of Transmission Bands
+W = 10
+#Maximum Bandwidth per Carrier
+Bmax = 20E6
+
 
 ########################################################################################################################
 # Main Script
@@ -125,10 +166,15 @@ k_x = np.zeros((int(BS), K))
 k_y = np.zeros((int(BS), K))
 c_x = np.zeros((int(BS), 1))
 c_y = np.zeros((int(BS), 1))
+alpha = np.zeros((int(BS), int(K), int(BS), int(W)))
 
+#Random Frequencies and Bandwidths
+B = randomBandwidths(W, Bmax)
+F = np.random.uniform(Fmin, Fmax, W)
+F = np.floor(F)
 
+#Random User Positions and Scenario Drawing
 i = 0
-
 for j in idx:
     if j[0] % 2 == 0:
         c_x[i] = j[0] * (3 / 2) * R
@@ -145,5 +191,20 @@ for j in idx:
         k_x[i, k], k_y[i, k] = transferPosition(k_x[i, k], k_y[i, k], c_x[i], c_y[i])
         drawUser(k_x[i][k], k_y[i][k])
     i += 1
+
+#Calculating Distances
+d = calcDistance(k_x, k_y, c_x, c_y)
+
+#Calculating Path Loss
+for i in range(0, len(B)):
+    alpha[:, :, :, i] = calcPathLoss(d, G, F[i], gamma)
+
+#Calculating Shadowing
+
+
+#Calculating Fading
+
+#Minimum Output Power (ETSI TS 136 101 V14.3.0 (2017-04))
+p_min = -40 #dBm
 
 plt.show()
