@@ -117,15 +117,25 @@ def calcDistance(kx, ky, cx, cy):
     return d
 
 
-def calcPathLoss(d, G, F, gamma):
-    alpha = np.zeros((len(d), len(d[0]), len(d[0][0])))
+def calcPathLoss(d, d0, F, gamma):
+    beta = np.zeros((len(d), len(d[0]), len(d[0][0])))
     for i in range(0, len(d)):
         for j in range(0, len(d[0])):
             for r in range(0, len(d[0][0])):
                 if (4*np.pi*F*(d[i, j, r]**gamma)) == 0:
                     print(d[i, j, r])
-                alpha[i, j, r] = ((np.sqrt(G)*3E8)/(4*np.pi*F*(d[i, j, r]**gamma)))**2
-    return alpha
+                beta[i, j, r] = (((3E8)/(4*np.pi*F*d0))**2)*((d0/d[i, j, r])**gamma)
+    return beta
+
+def calcShadowingPathLoss(d, d0, F, gamma, S):
+    beta = np.zeros((len(d), len(d[0]), len(d[0][0])))
+    for i in range(0, len(d)):
+        for j in range(0, len(d[0])):
+            for r in range(0, len(d[0][0])):
+                if (4*np.pi*F*(d[i, j, r]**gamma)) == 0:
+                    print(d[i, j, r])
+                beta[i, j, r] = (((3E8)/(4*np.pi*F*d0))**2)*((d0/d[i, j, r])**gamma)*np.random.normal(0, S)
+    return beta
 
 
 
@@ -134,7 +144,7 @@ def calcPathLoss(d, G, F, gamma):
 ########################################################################################################################
 
 #Cluster Size (1 to 4 works)
-C = 5
+C = 2
 #Base Stations (1 per cell)
 BS = chn(C)
 #Cell Radius
@@ -145,14 +155,16 @@ K = 10
 Fmin = 9E8
 #Max Transmission Frequency
 Fmax = 5E9
-#Antenna Total Gain (in dB)
-G = 10**(3/10)
+#Shadowing variance
+S = 10**(8/10)
 #Path Loss Exponent
 gamma = 2
 #Number of Transmission Bands
-W = 10
+W = 1
 #Maximum Bandwidth per Carrier
 Bmax = 20E6
+#Reference distance (1 m for indoor and 10 m for outdoor)
+d0 = 10
 
 
 ########################################################################################################################
@@ -166,7 +178,7 @@ k_x = np.zeros((int(BS), K))
 k_y = np.zeros((int(BS), K))
 c_x = np.zeros((int(BS), 1))
 c_y = np.zeros((int(BS), 1))
-alpha = np.zeros((int(BS), int(K), int(BS), int(W)))
+beta = np.zeros((int(BS), int(K), int(BS), int(W)))
 
 #Random Frequencies and Bandwidths
 B = randomBandwidths(W, Bmax)
@@ -197,7 +209,7 @@ d = calcDistance(k_x, k_y, c_x, c_y)
 
 #Calculating Path Loss
 for i in range(0, len(B)):
-    alpha[:, :, :, i] = calcPathLoss(d, G, F[i], gamma)
+    beta[:, :, :, i] = calcShadowingPathLoss(d, d0, F[i], gamma, S)
 
 #Calculating Shadowing
 
