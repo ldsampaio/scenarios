@@ -1,7 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
-import random
+
+########################################################################################################################
+# To do List
+########################################################################################################################
+# Create Pilot Sequence allocation hipermatrix (phi)
+# Create Fitness Function
+# Implement GA Using fitness function and beta hipermatrix along with phi
 
 ########################################################################################################################
 # Constants
@@ -207,14 +213,11 @@ for j in idx:
 #Calculating Distances
 d = calcDistance(k_x, k_y, c_x, c_y)
 
-#Calculating Path Loss
+#Calculating Path Loss and Shadowing
 for i in range(0, len(B)):
     beta[:, :, :, i] = calcShadowingPathLoss(d, d0, F[i], gamma, S)
 
-#Calculating Shadowing
-
-
-#Calculating Fading
+#Calculating Fading (TBD)
 
 #Minimum Output Power (ETSI TS 136 101 V14.3.0 (2017-04))
 p_min = -40 #dBm
