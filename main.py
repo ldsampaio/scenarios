@@ -135,13 +135,15 @@ def calcPathLoss(d, d0, F, gamma):
 
 def calcShadowingPathLoss(d, d0, F, gamma, S):
     beta = np.zeros((len(d), len(d[0]), len(d[0][0])))
+    tmp = np.random.normal(0, np.sqrt(S), beta.shape)
     for i in range(0, len(d)):
         for j in range(0, len(d[0])):
             for r in range(0, len(d[0][0])):
                 if (4*np.pi*F*(d[i, j, r]**gamma)) == 0:
                     print(d[i, j, r])
-                beta[i, j, r] = (((3E8)/(4*np.pi*F*d0))**2)*((d0/d[i, j, r])**gamma)*np.random.normal(0, S)
-    return beta
+                tmp[i, j, r] = 10**(tmp[i, j, r]/10)
+                beta[i, j, r] = ((3E8/(4*np.pi*F*d0))**2)*((d0/d[i, j, r])**gamma)*tmp[i, j, r]
+    return beta, tmp
 
 
 
@@ -161,8 +163,8 @@ K = 10
 Fmin = 9E8
 #Max Transmission Frequency
 Fmax = 5E9
-#Shadowing variance
-S = 10**(8/10)
+#Shadowing variance (in dB)
+S = 4
 #Path Loss Exponent
 gamma = 2
 #Number of Transmission Bands
@@ -185,6 +187,7 @@ k_y = np.zeros((int(BS), K))
 c_x = np.zeros((int(BS), 1))
 c_y = np.zeros((int(BS), 1))
 beta = np.zeros((int(BS), int(K), int(BS), int(W)))
+tmp = np.zeros((int(BS), int(K), int(BS), int(W)))
 
 #Random Frequencies and Bandwidths
 B = randomBandwidths(W, Bmax)
@@ -215,9 +218,20 @@ d = calcDistance(k_x, k_y, c_x, c_y)
 
 #Calculating Path Loss and Shadowing
 for i in range(0, len(B)):
-    beta[:, :, :, i] = calcShadowingPathLoss(d, d0, F[i], gamma, S)
+    beta[:, :, :, i], tmp[:, :, :, i] = calcShadowingPathLoss(d, d0, F[i], gamma, S)
 
 #Calculating Fading (TBD)
+
+########################################################################################################################
+# Histogram Plots to Check Consistency
+########################################################################################################################
+plt.figure(2)
+n, bins, patches = plt.hist(tmp.ravel(), 'auto', density=True, align='mid')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.title('Histogram')
+maxfreq = n.max()
+plt.ylim(top=np.ceil(maxfreq / 100) * 2 if maxfreq % 100 else maxfreq + 1)
 
 #Minimum Output Power (ETSI TS 136 101 V14.3.0 (2017-04))
 p_min = -40 #dBm
