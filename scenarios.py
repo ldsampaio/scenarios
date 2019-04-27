@@ -161,9 +161,8 @@ def drawScenario(C, R, K, c_x, c_y, k_x, k_y):
             x, y = hexagon(c_x[i], c_y[i], R)
             drawHexagon(x, y)
         for k in range(0, K):
-            drawUser(k_x[i][k], k_y[i][k])
+            drawUser(k_x[k][i], k_y[k][i])
         i += 1
-    plt.show()
     return
 
 
